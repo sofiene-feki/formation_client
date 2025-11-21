@@ -1,49 +1,30 @@
-"use client";
-
-import * as React from "react";
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
   NavigationMenuList,
   NavigationMenuItem,
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
-import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, LogOut } from "lucide-react";
 import logo from "../../assets/logo.png";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { logout } from "@/features/auth/authSlice";
 
 export default function Navbar() {
-  const navigate = useNavigate();
-
-  // ✅ User Firebase (juste pour la session)
-  const [firebaseUser, setFirebaseUser] = useState(null);
-
-  // ✅ User MongoDB (redux)
   const { user } = useSelector((state) => state.auth);
-  const role = user?.role || "guest";
-
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // ✅ Vérifie session Firebase
-  useEffect(() => {
-    // console.log("🔍 Checking Firebase auth state...", user);
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setFirebaseUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
+  const role = user?.role || "guest";
 
-  // ✅ Déconnexion Firebase + reset
-  const handleLogout = async () => {
-    await signOut(auth);
+  const handleLogout = () => {
+    dispatch(logout());
     navigate("/login");
   };
 
-  // ✅ Navigation dynamique selon rôle
   const navLinks = {
     guest: [
       { name: "Accueil", path: "/" },
@@ -69,20 +50,21 @@ export default function Navbar() {
     ],
   };
 
+  const linksToRender = navLinks[role] || navLinks.guest;
+
   return (
     <nav className="bg-background shadow-md sticky top-0 z-50 px-4 md:px-8">
       <div className="max-w-7xl mx-auto flex items-center justify-between h-16">
-        {/* LOGO */}
         <Link to="/" className="flex items-center gap-2">
           <img src={logo} alt="Logo" className="h-10 w-auto" />
           <span className="font-semibold text-lg">Learnify</span>
         </Link>
 
-        {/* DESKTOP MENU */}
+        {/* Desktop menu */}
         <div className="hidden md:flex items-center space-x-6">
           <NavigationMenu>
             <NavigationMenuList className="flex items-center space-x-4">
-              {navLinks[role]?.map((link) => (
+              {linksToRender.map((link) => (
                 <NavigationMenuItem key={link.name}>
                   <NavigationMenuLink asChild>
                     <Link
@@ -94,13 +76,11 @@ export default function Navbar() {
                   </NavigationMenuLink>
                 </NavigationMenuItem>
               ))}
-
-              {/* AUTH */}
               <NavigationMenuItem>
-                {firebaseUser ? (
+                {user ? (
                   <div className="flex items-center space-x-3">
                     <span className="text-sm text-gray-700">
-                      {user?.firstName || firebaseUser.email}
+                      {user.firstName}
                     </span>
                     <Button
                       variant="outline"
@@ -128,7 +108,7 @@ export default function Navbar() {
           </NavigationMenu>
         </div>
 
-        {/* MOBILE MENU */}
+        {/* Mobile menu */}
         <div className="md:hidden">
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -139,7 +119,7 @@ export default function Navbar() {
 
           {mobileOpen && (
             <div className="absolute top-16 right-4 bg-background shadow-md rounded-md p-4 w-56 flex flex-col space-y-2">
-              {navLinks[role]?.map((link) => (
+              {linksToRender.map((link) => (
                 <Link
                   key={link.name}
                   to={link.path}
@@ -149,12 +129,10 @@ export default function Navbar() {
                   {link.name}
                 </Link>
               ))}
-
-              {/* AUTH MOBILE */}
-              {firebaseUser ? (
+              {user ? (
                 <>
                   <div className="text-sm text-gray-600 px-2">
-                    {user?.firstName || firebaseUser.email}
+                    {user.firstName}
                   </div>
                   <Button onClick={handleLogout} className="w-full mt-2">
                     Logout

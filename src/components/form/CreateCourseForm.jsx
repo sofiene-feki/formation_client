@@ -1,109 +1,80 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import ChapterEditor from "./ChapterEditor";
-import { courseApi } from "@/features/courses/api";
-import { useSelector } from "react-redux";
 
-export default function CreateCourseForm() {
-  const { user } = useSelector((state) => state.auth);
-  const fullName = user
-    ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
-    : "";
+import SidebarLayout from "../layout/Sidebar";
+import CourseInfo from "./course/CourseInfo";
+import CourseMedia from "./course/CourseMedia";
+import CourseContent from "./course/CourseContent";
+import CoursePricing from "./course/CoursePricing";
+import CourseSEO from "./course/CourseSEO";
+import CoursePublish from "./course/CoursePublish";
 
-  const [course, setCourse] = useState({
-    title: "",
-    description: "",
-    level: "Beginner",
-    thumbnail: "",
-    Instructeur: fullName, // ✅ auto-fill
-    chapters: [],
-  });
-
-  const addChapter = () => {
-    setCourse({
-      ...course,
-      chapters: [
-        ...course.chapters,
-        { title: "", videoUrl: "", content: "", quiz: [] },
-      ],
-    });
+export default function CreateCourseForm({
+  course,
+  setCourse,
+  section,
+  setSection,
+  onSubmit,
+}) {
+  const updateField = (field, value) => {
+    setCourse((prev) => ({ ...prev, [field]: value }));
   };
 
-  const updateChapter = (index, updated) => {
-    const newChapters = [...course.chapters];
-    newChapters[index] = updated;
-
-    setCourse({ ...course, chapters: newChapters });
+  const updateNested = (field, newValue) => {
+    setCourse((prev) => ({ ...prev, [field]: newValue }));
   };
 
-  const removeChapter = (index) => {
-    const newChapters = course.chapters.filter((_, i) => i !== index);
-    setCourse({ ...course, chapters: newChapters });
-  };
+  const sidebarItems = [
+    { key: "info", label: "General Info" },
+    { key: "media", label: "Media Uploads" },
+    { key: "content", label: "Content Builder" },
+    { key: "pricing", label: "Pricing" },
+    { key: "seo", label: "SEO & Meta" },
+    { key: "publish", label: "Publish Settings" },
+  ];
 
-  const submitCourse = async () => {
-    try {
-      console.log("✅ Course data sent:", course);
-
-      const created = await courseApi.create(course);
-
-      console.log("✅ API response:", created);
-
-      alert("✅ Formation créée avec succès !");
-    } catch (err) {
-      console.error("❌ Erreur lors de la création du cours:", err);
-      alert("❌ Erreur, veuillez réessayer");
-    }
-  };
+  // useEffect(() => {
+  //   console.log("Content items updated:", course);
+  // }, [course]);
 
   return (
-    <div className="space-y-6">
-      {/* Course Title */}
-      <div>
-        <label className="block font-medium mb-1">Titre du cours</label>
-        <input
-          className="w-full border p-2 rounded"
-          value={course.title}
-          onChange={(e) => setCourse({ ...course, title: e.target.value })}
-          placeholder="Ex : Formation IA pour débutants"
-        />
-      </div>
+    <div className="max-w-7xl mx-auto">
+      <SidebarLayout
+        sidebarItems={sidebarItems}
+        active={section}
+        onChange={setSection}
+      >
+        {section === "info" && (
+          <CourseInfo course={course} updateField={updateField} />
+        )}
 
-      {/* Course Description */}
-      <div>
-        <label className="block font-medium mb-1">Description</label>
-        <textarea
-          className="w-full border p-2 rounded"
-          rows={4}
-          value={course.description}
-          onChange={(e) =>
-            setCourse({ ...course, description: e.target.value })
-          }
-        />
-      </div>
+        {section === "media" && (
+          <CourseMedia course={course} updateField={updateField} />
+        )}
 
-      {/* Chapters */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-xl font-semibold">Chapitres</h3>
-
-          <Button onClick={addChapter}>+ Ajouter un chapitre</Button>
-        </div>
-
-        {course.chapters.map((chapter, index) => (
-          <ChapterEditor
-            key={index}
-            chapter={chapter}
-            index={index}
-            updateChapter={updateChapter}
-            removeChapter={removeChapter}
+        {section === "content" && (
+          <CourseContent
+            course={course}
+            setCourse={setCourse}
+            updateNested={updateNested}
           />
-        ))}
-      </div>
+        )}
 
-      {/* Submit */}
-      <Button onClick={submitCourse} className="w-full mt-6">
-        ✅ Créer la formation
+        {section === "pricing" && (
+          <CoursePricing course={course} updateField={updateField} />
+        )}
+
+        {section === "seo" && (
+          <CourseSEO course={course} updateField={updateField} />
+        )}
+
+        {section === "publish" && (
+          <CoursePublish course={course} updateField={updateField} />
+        )}
+      </SidebarLayout>
+
+      <Button className="w-full mt-8" onClick={onSubmit}>
+        💾 Save
       </Button>
     </div>
   );

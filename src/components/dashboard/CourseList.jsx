@@ -63,8 +63,8 @@ export default function CourseList({ courses, onSelectCourse }) {
               <CardTitle>{course.title}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              {course.students} étudiants • Progression moyenne :{" "}
-              {course.avgProgress}
+              {course.totalStudents} étudiants • Progression moyenne :{" "}
+              {course.averageProgress}%
             </CardContent>
           </MotionCard>
         </Link>

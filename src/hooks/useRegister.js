@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { userApi } from "@/features/auth/api";
+//import { userApi } from "@/features/auth/api";
 
 export function useRegister() {
   const [loading, setLoading] = useState(false);
@@ -17,22 +17,20 @@ export function useRegister() {
 
     try {
       // Call backend to create Firebase + MongoDB user
-      const res = await userApi.create({
-        firstName,
-        lastName,
-        email: data.email,
-        password: data.password,
-        phone: data.phone,
-        gender: data.gender,
-        birthDate: data.birthDate,
-        job: data.job,
-        role: "user",
-      });
-
-      // ✅ Successfully created → redirect to phone verification
-      navigate("/verify-phone", { state: { phone: data.phone } });
-
-      return res.data;
+      // const res = await userApi.create({
+      //   firstName,
+      //   lastName,
+      //   email: data.email,
+      //   password: data.password,
+      //   phone: data.phone,
+      //   gender: data.gender,
+      //   birthDate: data.birthDate,
+      //   job: data.job,
+      //   role: "user",
+      // });
+      // // ✅ Successfully created → redirect to phone verification
+      // navigate("/verify-phone", { state: { phone: data.phone } });
+      // return res.data;
     } catch (err) {
       console.error("❌ Register error:", err);
       setError(

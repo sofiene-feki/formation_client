@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import axios from "@/lib/axios";
 
 import CourseHeader from "@/components/course/CourseHeader";
 import CourseProgress from "@/components/course/CourseProgress";
@@ -10,24 +9,27 @@ import CourseContent from "@/components/course/CourseContent";
 import NextChapterButton from "@/components/course/NextChapterButton";
 import ChapterQuiz from "@/components/course/ChapterQuiz";
 
-import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
+import { useSelector } from "react-redux";
 import { useCourseProgress } from "@/hooks/useCourseProgress";
+import { studentCourseApi } from "@/features/studentCourse/api";
+import axios from "axios";
 
 export default function CoursePage() {
   const { id } = useParams();
-  const { user, loading: authLoading } = useFirebaseAuth();
+  const { user } = useSelector((state) => state.auth);
+  const userId = user?._id;
 
   const [course, setCourse] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
-  const [showQuiz, setShowQuiz] = useState(false);
 
-  // fetch course
+  // Fetch course details
   useEffect(() => {
-    if (!id) return;
     const fetchCourse = async () => {
       try {
-        const { data } = await axios.get(`/api/courses/${id}`);
-        setCourse(data);
+        const { data } = await axios.get(
+          `http://localhost:8000/api/courses/${id}`
+        );
+        setCourse(data.course);
       } catch (err) {
         console.error("Failed to fetch course:", err);
       }
@@ -35,121 +37,125 @@ export default function CoursePage() {
     fetchCourse();
   }, [id]);
 
-  // 👉 always define totalChapters safely
-  const totalChapters = course?.chapters?.length ?? 0;
+  const items = course?.contentItems || [];
+  const totalSteps = items.length;
 
-  // ✅ always call the hook (never conditionally)
   const {
-    lastVisitedChapter,
+    itemsProgress,
+    lastVisitedContent,
     progress,
     loading: progressLoading,
-    saveLastVisited,
-    submitQuiz,
-    isChapterPassed,
-  } = useCourseProgress(id, totalChapters);
+    updateItemProgress,
+    isItemPassed,
+  } = useCourseProgress(id, items, userId);
 
+  // Set active step based on last visited
   useEffect(() => {
-    if (course && lastVisitedChapter < totalChapters) {
-      setActiveStep(lastVisitedChapter);
-      setShowQuiz(false);
+    if (course && itemsProgress.length) {
+      setActiveStep(Math.min(lastVisitedContent, totalSteps - 1));
     }
-  }, [course, lastVisitedChapter, totalChapters]);
+  }, [course, lastVisitedContent, totalSteps, itemsProgress.length]);
 
-  const currentChapter = course?.chapters?.[activeStep];
-  const isLastChapter = totalChapters > 0 && activeStep === totalChapters - 1;
+  const currentItem = items[activeStep] || null;
+  const isLastStep = activeStep === totalSteps - 1;
 
+  // Handle next chapter/chapter completion
   const handleNext = useCallback(async () => {
-    if (showQuiz) {
-      setShowQuiz(false);
-      const nextStep = activeStep + 1;
-      await saveLastVisited(nextStep);
-      setActiveStep(nextStep);
-      return;
+    const nextIndex = activeStep + 1;
+    if (!currentItem) return;
+
+    if (currentItem.type === "chapter") {
+      await updateItemProgress({
+        itemIndex: activeStep,
+        type: "chapter",
+        completed: true,
+      });
     }
 
-    if (currentChapter?.quiz?.length > 0) {
-      setShowQuiz(true);
-    } else {
-      const nextStep = activeStep + 1;
-      await saveLastVisited(nextStep);
-      setActiveStep(nextStep);
-    }
-  }, [showQuiz, currentChapter, activeStep, saveLastVisited]);
+    if (nextIndex < totalSteps) setActiveStep(nextIndex);
+  }, [activeStep, currentItem, totalSteps, updateItemProgress]);
 
+  // Handle quiz completion
   const handleQuizComplete = useCallback(
     async ({ score, passed }) => {
-      if (!course || !user) return;
+      if (!currentItem) return;
 
-      const chapterIndex = activeStep;
-      const result = await submitQuiz({ chapterIndex, score, passed });
+      await updateItemProgress({
+        itemIndex: activeStep,
+        type: "quiz",
+        score,
+        passed,
+        completed: passed,
+      });
 
-      if (passed) {
-        const nextStep = activeStep + 1;
-        await saveLastVisited(nextStep);
-        setShowQuiz(false);
-        setActiveStep(nextStep);
-      } else {
-        alert("❌ Vous devez obtenir au moins 70% pour continuer !");
-      }
+      if (passed) handleNext();
+      else alert("❌ Vous devez réussir le quiz pour continuer !");
     },
-    [course, user, activeStep, submitQuiz, saveLastVisited]
+    [activeStep, currentItem, updateItemProgress, handleNext]
   );
 
-  if (authLoading || progressLoading || !course)
-    return <p className="text-center mt-10">Chargement du cours...</p>;
+  // if (!course || progressLoading) {
+  //   return (
+  //     <p className="text-center mt-10 text-slate-500 animate-pulse">
+  //       Chargement du cours...
+  //     </p>
+  //   );
+  // }
 
   return (
     <main className="max-w-5xl mx-auto px-4 py-10">
       <CourseHeader
-        title={course.title}
-        instructor={course.Instructeur}
-        thumbnail={course.thumbnail}
-        description={course.description}
+        title={course?.title}
+        instructor={course?.Instructeur}
+        thumbnail={course?.thumbnail?.url}
+        description={course?.description}
       />
 
       <CourseProgress
-        totalChapters={totalChapters}
-        lastVisitedChapter={lastVisitedChapter}
-        quizPositions={course?.chapters?.reduce((arr, c, i) => {
-          if (c.quiz && c.quiz.length > 0) arr.push(i);
-          return arr;
-        }, [])}
-        isChapterPassed={isChapterPassed}
-        onSelectChapter={setActiveStep}
+        totalChapters={totalSteps}
+        lastVisitedChapter={lastVisitedContent}
+        quizPositions={items
+          .map((item, i) => (item.type === "quiz" ? i : null))
+          .filter((v) => v !== null)}
+        isChapterPassed={isItemPassed}
+        onSelectChapter={(index) => {
+          if (index <= lastVisitedContent) setActiveStep(index);
+        }}
       />
 
       <motion.div
-        key={`${activeStep}-${showQuiz}`}
+        key={activeStep}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
         className="mt-8"
       >
-        {!showQuiz ? (
+        {/* Render chapter */}
+        {currentItem?.type === "chapter" && (
           <>
-            <ChapterSummary chapter={currentChapter} />
-            <CourseContent content={currentChapter?.content} />
+            <ChapterSummary chapter={currentItem} />
+            <CourseContent content={currentItem.content} />
             <div className="flex justify-end mt-6">
-              <NextChapterButton
-                onClick={handleNext}
-                disabled={isLastChapter && !currentChapter?.quiz?.length}
-              />
+              <NextChapterButton onClick={handleNext} disabled={isLastStep} />
             </div>
           </>
-        ) : (
+        )}
+
+        {/* Render quiz */}
+        {currentItem?.type === "quiz" && (
           <div className="border rounded-xl p-6 bg-white dark:bg-slate-900 shadow-sm">
             <h3 className="text-xl font-semibold mb-4 text-center">
-              Quiz du chapitre {activeStep + 1}
+              Quiz : {currentItem.title}
             </h3>
             <ChapterQuiz
-              quiz={currentChapter.quiz}
+              quiz={currentItem.quiz}
               onComplete={handleQuizComplete}
             />
           </div>
         )}
       </motion.div>
 
-      {isLastChapter && !showQuiz && (
+      {isLastStep && (
         <div className="text-center mt-8 text-green-600 font-semibold text-lg">
           🎉 Félicitations, vous avez terminé le cours !
         </div>

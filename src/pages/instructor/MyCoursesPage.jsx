@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import CourseList from "@/components/dashboard/CourseList";
 import CourseDetails from "@/components/dashboard/CourseDetails";
 import StudentInsightsCard from "@/components/dashboard/StudentInsightsCard";
+import { instructorApi } from "@/features/instructor/api";
 
 export default function MyCoursesPage() {
   const { user } = useSelector((state) => state.auth);
@@ -21,11 +22,11 @@ export default function MyCoursesPage() {
   const fullName = user ? `${user.firstName} ${user.lastName}` : "";
 
   useEffect(() => {
-    if (!fullName) return;
+    //  if (!fullName) return;
 
     const load = async () => {
       try {
-        const data = await courseApi.getByInstructor(fullName);
+        const data = await instructorApi.getInstructorCourses();
         setCourses(data);
       } catch (err) {
         console.error("Erreur :", err);
@@ -35,7 +36,7 @@ export default function MyCoursesPage() {
     };
 
     load();
-  }, [fullName]);
+  }, [user]);
 
   if (!user)
     return (

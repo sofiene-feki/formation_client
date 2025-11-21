@@ -1,105 +1,106 @@
-// src/hooks/useCourseProgress.js
+import { studentCourseApi } from "@/features/studentCourse/api";
 import { useState, useEffect, useCallback } from "react";
-import { useFirebaseAuth } from "./useFirebaseAuth";
-import axios from "@/lib/axios";
 
-export function useCourseProgress(courseId, totalChapters) {
-  const { user } = useFirebaseAuth();
-  const [lastVisitedChapter, setLastVisitedChapter] = useState(0);
-  const [quizResults, setQuizResults] = useState([]); // [{chapterIndex, score, passed}]
+export function useCourseProgress(courseId, items, userId) {
+  const [itemsProgress, setItemsProgress] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Compute overall progress
   const progress =
-    totalChapters > 0
-      ? Math.min(((lastVisitedChapter + 1) / totalChapters) * 100, 100)
+    items.length > 0
+      ? Math.min(
+          (itemsProgress.filter((i) => i.completed || i.videoCompleted).length /
+            items.length) *
+            100,
+          100
+        )
       : 0;
 
-  // Fetch existing userCourse record
+  // Fetch existing progress
   useEffect(() => {
-    if (!user || !courseId) return;
+    if (!userId || !courseId) return;
 
     let cancelled = false;
+
     const fetchProgress = async () => {
       setLoading(true);
       try {
-        const { data } = await axios.get(
-          `/api/userCourses/${user.uid}/${courseId}`
-        );
+        const data = await studentCourseApi.getProgress(userId, courseId);
         if (cancelled) return;
-        setLastVisitedChapter(data.lastVisitedChapter ?? 0);
-        setQuizResults(Array.isArray(data.quizResults) ? data.quizResults : []);
+
+        setItemsProgress(
+          Array.isArray(data.itemsProgress) ? data.itemsProgress : []
+        );
       } catch (err) {
         console.error("Failed to fetch course progress:", err);
-        // keep defaults
+        setItemsProgress([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
+
     fetchProgress();
     return () => {
       cancelled = true;
     };
-  }, [user, courseId]);
+  }, [userId, courseId]);
 
-  // increment lastVisitedChapter (useful if you want to move forward without quiz)
-  const saveLastVisited = useCallback(
-    async (newIndex) => {
-      if (!user || !courseId) return;
+  // Update item progress (chapter or quiz)
+  const updateItemProgress = useCallback(
+    async ({
+      itemIndex,
+      type,
+      completed,
+      watchedSeconds,
+      totalSeconds,
+      score,
+      passed,
+    }) => {
+      if (!userId || !courseId) return;
+
       try {
-        const { data } = await axios.put(
-          `/api/userCourses/${user.uid}/${courseId}`,
+        const updated = await studentCourseApi.updateItemProgress(
+          userId, // ✅ first
+          courseId, // ✅ second
           {
-            lastVisitedChapter: newIndex,
-            totalChapters,
+            itemIndex,
+            type,
+            completed,
+            watchedSeconds,
+            totalSeconds,
+            score,
+            passed,
           }
         );
-        setLastVisitedChapter(data.lastVisitedChapter ?? newIndex);
+
+        setItemsProgress(updated.itemsProgress);
+        return updated;
       } catch (err) {
-        console.error("Failed to save lastVisitedChapter:", err);
-      }
-    },
-    [user, courseId, totalChapters]
-  );
-
-  // submit quiz result and update local state — backend will unlock next chapter if passed
-  const submitQuiz = useCallback(
-    async ({ chapterIndex, score, passed }) => {
-      if (!user || !courseId) return null;
-      try {
-        const { data } = await axios.post(
-          `/api/userCourses/${user.uid}/${courseId}/quiz`,
-          { chapterIndex, score, passed }
-        );
-
-        // update local state from response
-        setLastVisitedChapter(data.lastVisitedChapter ?? ((prev) => prev));
-        setQuizResults(Array.isArray(data.quizResults) ? data.quizResults : []);
-
-        return data;
-      } catch (err) {
-        console.error("Failed to submit quiz:", err);
+        console.error("Failed to update item progress:", err);
         throw err;
       }
     },
-    [user, courseId]
+    [userId, courseId]
   );
 
-  // helper: check if a chapter's quiz was passed
-  const isChapterPassed = useCallback(
-    (chapterIndex) => {
-      const r = quizResults.find((q) => q.chapterIndex === chapterIndex);
-      return r ? !!r.passed : false;
+  const isItemPassed = useCallback(
+    (itemIndex) => {
+      const item = itemsProgress[itemIndex];
+      return item?.passed ?? false;
     },
-    [quizResults]
+    [itemsProgress]
   );
+
+  const lastVisitedContent = itemsProgress.length
+    ? Math.max(...itemsProgress.map((i) => i.itemIndex))
+    : 0;
 
   return {
-    lastVisitedChapter,
+    itemsProgress,
+    lastVisitedContent,
     progress,
     loading,
-    saveLastVisited,
-    submitQuiz,
-    isChapterPassed,
-    quizResults,
+    updateItemProgress,
+    isItemPassed,
   };
 }

@@ -1,6 +1,6 @@
 // slice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { userApi } from "./api";
+import { authApi } from "./api";
 
 export const fetchCurrentUser = createAsyncThunk(
   "auth/fetchCurrentUser",
@@ -11,7 +11,7 @@ export const fetchCurrentUser = createAsyncThunk(
 
       // 👇 Ici tu peux décoder le token si besoin, mais on récupère depuis backend
       const email = JSON.parse(atob(token.split(".")[1])).email;
-      const user = await userApi.getByEmail(email);
+      const user = await authApi.getByEmail(email);
 
       console.log("✅ User fetched from Mongo:", user);
       return user;

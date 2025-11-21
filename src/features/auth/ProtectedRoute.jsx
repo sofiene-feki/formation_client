@@ -1,24 +1,13 @@
-import { useSelector } from "react-redux";
+import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
+import { useSelector } from "react-redux";
 
-export default function ProtectedRoute({ roles = [] }) {
-  // ✅ Access auth slice
-  const { user, status } = useSelector((state) => state.auth);
+export default function ProtectedRoute({ children, roles }) {
+  const { user, token } = useSelector((state) => state.auth);
 
-  // ⏳ Wait until user is loaded
-  if (status === "loading") {
-    return <div className="text-center py-10">Loading...</div>;
-  }
-
-  // ❌ Not logged in
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // ❌ Unauthorized
-  if (roles.length && !roles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />;
-  }
+  if (!token || !user) return <Navigate to="/login" />;
+  if (roles && !roles.includes(user.role))
+    return <Navigate to="/unauthorized" />;
 
   // ✅ Authorized
   return <Outlet />;

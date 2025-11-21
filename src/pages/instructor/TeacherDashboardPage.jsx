@@ -1,4 +1,3 @@
-"use client";
 import KPI from "@/components/dashboard/KPI";
 import CourseList from "@/components/dashboard/CourseList";
 import AdvancedAnalytics from "@/components/dashboard/AdvancedAnalytics";
@@ -11,8 +10,28 @@ import VideoAnalytics from "@/components/dashboard/VideoAnalytics";
 import CourseHealthScore from "@/components/dashboard/CourseHealthScore";
 import RevenueCharts from "@/components/dashboard/RevenueCharts";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { instructorApi } from "@/features/instructor/api";
 
 export default function InstructorDashboard() {
+  const [kpi, setKpi] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchKPI = async () => {
+      try {
+        const data = await instructorApi.getInstructorKPI();
+        setKpi(data);
+        console.log("Fetched KPI:", data);
+      } catch (err) {
+        console.error("Failed to fetch KPI:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchKPI();
+  }, []);
+
   return (
     <div className="w-full px-6 py-8 space-y-10">
       <motion.div
@@ -22,7 +41,7 @@ export default function InstructorDashboard() {
         className="space-y-10"
       >
         {/* KPI top metrics */}
-        <KPI />
+        <KPI kpi={kpi} loading={loading} />
 
         {/* Revenus + Course Health */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -63,7 +63,7 @@ export default function QuestionEditor({
             <input
               type="checkbox"
               className="size-5"
-              checked={question.correctAnswers.includes(optIndex)}
+              checked={question?.correctAnswers?.includes(optIndex)}
               onChange={() => toggleCorrect(optIndex)}
             />
           </div>

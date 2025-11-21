@@ -2,12 +2,12 @@ import React from "react";
 import { MotionCard } from "./MotionCard";
 import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-export default function KPI({ onClickCourse }) {
+export default function KPI({ kpi, loading, onClickCourse }) {
   const stats = [
-    { label: "Total cours", value: 12 },
-    { label: "Total étudiants", value: 486 },
-    { label: "Total revenus", value: "€14 820" },
-    { label: "Progression moyenne", value: "67%" },
+    { label: "Total cours", value: kpi?.totalCourses },
+    { label: "Total étudiants", value: kpi?.totalStudents },
+    { label: "Total revenus", value: `€${kpi?.totalRevenue}` },
+    { label: "Progression moyenne", value: `${kpi?.averageProgress}%` },
   ];
 
   return (

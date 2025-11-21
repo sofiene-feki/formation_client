@@ -1,4 +1,6 @@
 import axios from "@/lib/axios";
+const token =
+  typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
 export const courseApi = {
   // ✅ Get all courses
@@ -14,14 +16,18 @@ export const courseApi = {
   },
 
   // ✅ Create a new course
-  create: async (courseData) => {
-    const { data } = await axios.post("/api/courses", courseData);
-    return data;
+  create: async (course) => {
+    const res = await axios.post("/api/courses", course, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.course;
   },
 
   // ✅ Update a course
   update: async (id, updates) => {
-    const { data } = await axios.put(`/api/courses/${id}`, updates);
+    const { data } = await axios.put(`/api/courses/${id}`, updates, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return data;
   },
 
