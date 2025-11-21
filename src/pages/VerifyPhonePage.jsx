@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 
 export default function VerifyPhonePage() {
   const navigate = useNavigate();
