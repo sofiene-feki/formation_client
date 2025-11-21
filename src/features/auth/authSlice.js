@@ -3,7 +3,10 @@ import axios from "axios";
 
 // Thunks for async actions
 export const loginUser = createAsyncThunk("auth/login", async (formData) => {
-  const res = await axios.post("http://localhost:8000/api/login", formData);
+  const res = await axios.post(
+    "https://formation-server.onrender.com/api/login",
+    formData
+  );
   return res.data; // { token, user }
 });
 
@@ -13,9 +16,12 @@ export const fetchCurrentUser = createAsyncThunk(
     const token = localStorage.getItem("token");
     if (!token) throw new Error("No token");
 
-    const res = await axios.get("http://localhost:8000/api/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await axios.get(
+      "https://formation-server.onrender.com/api/me",
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
 
     return res.data; // { _id, firstName, lastName, email, role }
   }

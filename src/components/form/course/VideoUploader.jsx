@@ -22,7 +22,7 @@ export default function VideoUploader({ value, onChange }) {
       formData.append("file", file);
 
       const { data } = await axios.post(
-        "http://localhost:8000/api/upload/video",
+        "https://formation-server.onrender.com/api/upload/video",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

@@ -25,7 +25,9 @@ export default function CourseIntro() {
     const loadCourse = async () => {
       try {
         // Fetch course details
-        const res = await fetch(`http://localhost:8000/api/courses/${id}`);
+        const res = await fetch(
+          `https://formation-server.onrender.com/api/courses/${id}`
+        );
         const data = await res.json();
         setCourse(data.course);
 

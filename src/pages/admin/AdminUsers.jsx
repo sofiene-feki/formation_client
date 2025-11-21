@@ -28,7 +28,7 @@ import LockResetIcon from "@mui/icons-material/LockReset";
 import axios from "axios";
 
 export default function AdminUsers() {
-  const API_URL = "http://localhost:8000/api/admin/users";
+  const API_URL = "https://formation-server.onrender.com/api/admin/users";
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
@@ -76,7 +76,7 @@ export default function AdminUsers() {
   const handleCreateUser = async () => {
     try {
       const res = await axios.post(
-        "http://localhost:8000/api/register",
+        "https://formation-server.onrender.com/api/register",
         newUser,
         {
           headers: { Authorization: `Bearer ${token}` },

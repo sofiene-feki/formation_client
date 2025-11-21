@@ -22,7 +22,7 @@ export default function ImageUploader({ value, onChange }) {
       formData.append("file", file);
 
       const { data } = await axios.post(
-        "http://localhost:8000/api/upload/image",
+        "https://formation-server.onrender.com/api/upload/image",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

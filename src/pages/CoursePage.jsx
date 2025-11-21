@@ -27,7 +27,7 @@ export default function CoursePage() {
     const fetchCourse = async () => {
       try {
         const { data } = await axios.get(
-          `http://localhost:8000/api/courses/${id}`
+          `https://formation-server.onrender.com/api/courses/${id}`
         );
         setCourse(data.course);
       } catch (err) {
