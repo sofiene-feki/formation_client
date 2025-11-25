@@ -2,7 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
-export default function NextChapterButton({ onClick, disabled }) {
+export default function NextChapterButton({ onClick, disabled, isLastStep }) {
   return (
     <Button
       variant="default"
@@ -11,7 +11,7 @@ export default function NextChapterButton({ onClick, disabled }) {
       disabled={disabled}
       className="mt-6 flex items-center gap-2"
     >
-      Chapitre suivant
+      {isLastStep ? "Obtenir mon certificat" : "Chapitre suivant"}
       <ArrowRight className="size-4" />
     </Button>
   );

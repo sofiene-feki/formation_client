@@ -35,6 +35,9 @@ export default function AppRoutes() {
       {/* ✅ ÉTUDIANT ROUTES */}
       <Route element={<ProtectedRoute roles={["student", "admin"]} />}>
         <Route path="/my-courses" element={<StudentCoursesPage />} />
+        {/* <Route path="/course/:courseId/chapter/:chapterIndex" element={<CoursePage />} />
+<Route path="/course/:courseId/quiz/:quizIndex" element={<CoursePage />} />
+<Route path="/course/:courseId/certificate" element={<CoursePage />} /> */}
       </Route>
 
       {/* ✅ FORMATEUR ROUTES */}

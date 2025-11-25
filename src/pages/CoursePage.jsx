@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useSelector } from "react-redux";
+import axios from "axios";
 
 import CourseHeader from "@/components/course/CourseHeader";
 import CourseProgress from "@/components/course/CourseProgress";
@@ -8,11 +10,7 @@ import ChapterSummary from "@/components/course/ChapterSummary";
 import CourseContent from "@/components/course/CourseContent";
 import NextChapterButton from "@/components/course/NextChapterButton";
 import ChapterQuiz from "@/components/course/ChapterQuiz";
-
-import { useSelector } from "react-redux";
 import { useCourseProgress } from "@/hooks/useCourseProgress";
-import { studentCourseApi } from "@/features/studentCourse/api";
-import axios from "axios";
 
 export default function CoursePage() {
   const { id } = useParams();
@@ -38,7 +36,7 @@ export default function CoursePage() {
   }, [id]);
 
   const items = course?.contentItems || [];
-  const totalSteps = items.length;
+  const totalSteps = items.length; // +1 for certificate
 
   const {
     itemsProgress,
@@ -52,34 +50,42 @@ export default function CoursePage() {
   // Set active step based on last visited
   useEffect(() => {
     if (course && itemsProgress.length) {
-      setActiveStep(Math.min(lastVisitedContent, totalSteps - 1));
+      setActiveStep(Math.min(lastVisitedContent, items.length - 1));
     }
-  }, [course, lastVisitedContent, totalSteps, itemsProgress.length]);
+  }, [course]);
 
   const currentItem = items[activeStep] || null;
-  const isLastStep = activeStep === totalSteps - 1;
+  const isCertificateStep = activeStep === items.length; // certificate comes after last item
+  const isLastStep = activeStep === items.length - 1;
 
-  // Handle next chapter/chapter completion
-  const handleNext = useCallback(async () => {
-    const nextIndex = activeStep + 1;
-    if (!currentItem) return;
+  // Move to next step and update progress
+  const handleNext = async () => {
+    const item = items[activeStep]; // always fresh
+    const isCertificate = activeStep === items.length;
 
-    if (currentItem.type === "chapter") {
-      await updateItemProgress({
-        itemIndex: activeStep,
-        type: "chapter",
-        completed: true,
-      });
+    if (!isCertificate && item) {
+      if (item.type === "chapter") {
+        await updateItemProgress({
+          itemIndex: activeStep,
+          type: "chapter",
+          completed: true,
+        });
+      } else if (item.type === "quiz") {
+        await updateItemProgress({
+          itemIndex: activeStep,
+          type: "quiz",
+          completed: true,
+          passed: true,
+        });
+      }
     }
 
-    if (nextIndex < totalSteps) setActiveStep(nextIndex);
-  }, [activeStep, currentItem, totalSteps, updateItemProgress]);
+    setActiveStep((prev) => Math.min(prev + 1, totalSteps - 1));
+  };
 
-  // Handle quiz completion
   const handleQuizComplete = useCallback(
     async ({ score, passed }) => {
       if (!currentItem) return;
-
       await updateItemProgress({
         itemIndex: activeStep,
         type: "quiz",
@@ -87,20 +93,19 @@ export default function CoursePage() {
         passed,
         completed: passed,
       });
-
       if (passed) handleNext();
       else alert("❌ Vous devez réussir le quiz pour continuer !");
     },
     [activeStep, currentItem, updateItemProgress, handleNext]
   );
 
-  // if (!course || progressLoading) {
-  //   return (
-  //     <p className="text-center mt-10 text-slate-500 animate-pulse">
-  //       Chargement du cours...
-  //     </p>
-  //   );
-  // }
+  if (!course || progressLoading) {
+    return (
+      <p className="text-center mt-10 text-slate-500 animate-pulse">
+        Chargement du cours...
+      </p>
+    );
+  }
 
   return (
     <main className="max-w-5xl mx-auto px-4 py-10">
@@ -112,14 +117,15 @@ export default function CoursePage() {
       />
 
       <CourseProgress
-        totalChapters={totalSteps}
+        totalChapters={items.length + 1} // include certificate step
+        activeStep={activeStep} // active highlight!
         lastVisitedChapter={lastVisitedContent}
         quizPositions={items
           .map((item, i) => (item.type === "quiz" ? i : null))
           .filter((v) => v !== null)}
         isChapterPassed={isItemPassed}
         onSelectChapter={(index) => {
-          if (index <= lastVisitedContent) setActiveStep(index);
+          if (index <= items.length) setActiveStep(index);
         }}
       />
 
@@ -130,19 +136,21 @@ export default function CoursePage() {
         transition={{ duration: 0.4 }}
         className="mt-8"
       >
-        {/* Render chapter */}
-        {currentItem?.type === "chapter" && (
+        {!isCertificateStep && currentItem?.type === "chapter" && (
           <>
             <ChapterSummary chapter={currentItem} />
             <CourseContent content={currentItem.content} />
             <div className="flex justify-end mt-6">
-              <NextChapterButton onClick={handleNext} disabled={isLastStep} />
+              <NextChapterButton
+                onClick={handleNext}
+                disabled={false}
+                isLastStep={isLastStep}
+              />
             </div>
           </>
         )}
 
-        {/* Render quiz */}
-        {currentItem?.type === "quiz" && (
+        {!isCertificateStep && currentItem?.type === "quiz" && (
           <div className="border rounded-xl p-6 bg-white dark:bg-slate-900 shadow-sm">
             <h3 className="text-xl font-semibold mb-4 text-center">
               Quiz : {currentItem.title}
@@ -151,15 +159,44 @@ export default function CoursePage() {
               quiz={currentItem.quiz}
               onComplete={handleQuizComplete}
             />
+            <div className="flex justify-end mt-6">
+              <NextChapterButton
+                onClick={handleNext}
+                disabled={false}
+                isLastStep={isLastStep}
+              />
+            </div>
+          </div>
+        )}
+
+        {isCertificateStep && (
+          <div className="mt-8 border p-6 rounded-xl bg-yellow-50 dark:bg-gray-800 shadow-md text-center">
+            <h2 className="text-2xl font-bold mb-4">
+              🎓 Certificat de complétion
+            </h2>
+            <p className="text-lg mb-2">
+              Nom de l’étudiant :{" "}
+              <span className="font-semibold">{user?.name}</span>
+            </p>
+            <p className="text-lg mb-2">
+              Cours : <span className="font-semibold">{course?.title}</span>
+            </p>
+            <p className="text-lg mb-2">
+              Date :{" "}
+              <span className="font-semibold">
+                {new Date().toLocaleDateString()}
+              </span>
+            </p>
+            <p className="text-lg mb-2">
+              Score :{" "}
+              <span className="font-semibold">{Math.round(progress)}%</span>
+            </p>
+            <p className="mt-4 text-green-700 font-semibold">
+              Félicitations ! Vous avez terminé le cours avec succès.
+            </p>
           </div>
         )}
       </motion.div>
-
-      {isLastStep && (
-        <div className="text-center mt-8 text-green-600 font-semibold text-lg">
-          🎉 Félicitations, vous avez terminé le cours !
-        </div>
-      )}
     </main>
   );
 }

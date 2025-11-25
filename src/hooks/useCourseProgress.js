@@ -5,7 +5,7 @@ export function useCourseProgress(courseId, items, userId) {
   const [itemsProgress, setItemsProgress] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Compute overall progress
+  // Compute progress based on chapters/quizzes only
   const progress =
     items.length > 0
       ? Math.min(
@@ -16,18 +16,15 @@ export function useCourseProgress(courseId, items, userId) {
         )
       : 0;
 
-  // Fetch existing progress
   useEffect(() => {
     if (!userId || !courseId) return;
-
     let cancelled = false;
 
     const fetchProgress = async () => {
       setLoading(true);
       try {
         const data = await studentCourseApi.getProgress(userId, courseId);
-        if (cancelled) return;
-
+        if (cancelled) return; // ✔️ Only stop if cancelled == true
         setItemsProgress(
           Array.isArray(data.itemsProgress) ? data.itemsProgress : []
         );
@@ -45,34 +42,21 @@ export function useCourseProgress(courseId, items, userId) {
     };
   }, [userId, courseId]);
 
-  // Update item progress (chapter or quiz)
   const updateItemProgress = useCallback(
-    async ({
-      itemIndex,
-      type,
-      completed,
-      watchedSeconds,
-      totalSeconds,
-      score,
-      passed,
-    }) => {
+    async ({ itemIndex, type, completed, score, passed }) => {
       if (!userId || !courseId) return;
-
       try {
         const updated = await studentCourseApi.updateItemProgress(
-          userId, // ✅ first
-          courseId, // ✅ second
+          userId,
+          courseId,
           {
             itemIndex,
             type,
             completed,
-            watchedSeconds,
-            totalSeconds,
             score,
             passed,
           }
         );
-
         setItemsProgress(updated.itemsProgress);
         return updated;
       } catch (err) {
@@ -85,8 +69,9 @@ export function useCourseProgress(courseId, items, userId) {
 
   const isItemPassed = useCallback(
     (itemIndex) => {
-      const item = itemsProgress[itemIndex];
-      return item?.passed ?? false;
+      const item = itemsProgress.find((i) => i.itemIndex === itemIndex);
+      if (!item) return false;
+      return item.type === "quiz" ? !!item.passed : !!item.completed;
     },
     [itemsProgress]
   );

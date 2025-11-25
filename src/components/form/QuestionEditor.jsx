@@ -19,14 +19,15 @@ export default function QuestionEditor({
   };
 
   const toggleCorrect = (i) => {
-    const newCorrect = [...question.correctAnswers];
+    const newCorrect = [...(question.correctAnswer || [])];
+
     if (newCorrect.includes(i)) {
       updateField(
-        "correctAnswers",
+        "correctAnswer",
         newCorrect.filter((x) => x !== i)
       );
     } else {
-      updateField("correctAnswers", [...newCorrect, i]);
+      updateField("correctAnswer", [...newCorrect, i]);
     }
   };
 
@@ -63,7 +64,7 @@ export default function QuestionEditor({
             <input
               type="checkbox"
               className="size-5"
-              checked={question?.correctAnswers?.includes(optIndex)}
+              checked={(question.correctAnswer || []).includes(optIndex)}
               onChange={() => toggleCorrect(optIndex)}
             />
           </div>
