@@ -4,10 +4,10 @@ import { CheckCircle, Circle, HelpCircle, Award } from "lucide-react";
 export default function CourseProgress({
   totalChapters,
   activeStep, // NEW: real current step
-  lastVisitedChapter,
   quizPositions = [],
   isChapterPassed,
   onSelectChapter,
+  getQuizStatus,
 }) {
   const allPassed = Array.from({ length: totalChapters }).every((_, idx) =>
     isChapterPassed(idx)
@@ -22,6 +22,8 @@ export default function CourseProgress({
           const passed = isChapterPassed(i);
           const isActive = i === activeStep;
           const isQuizStep = quizPositions.includes(i);
+          const failedQuiz = isQuizStep && !passed;
+          const status = getQuizStatus(i);
 
           return (
             <div
@@ -31,12 +33,13 @@ export default function CourseProgress({
             >
               <div
                 className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors duration-300 ${
-                  // certificate step style
                   isLast
                     ? allPassed
                       ? "bg-yellow-500 text-white animate-pulse"
                       : "bg-gray-300 dark:bg-gray-600 text-gray-500"
-                    : passed
+                    : status === "failed"
+                    ? "bg-red-500 text-white"
+                    : status === "passed"
                     ? "bg-green-500 text-white"
                     : isActive
                     ? "bg-blue-600 text-white"

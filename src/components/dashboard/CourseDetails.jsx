@@ -225,7 +225,7 @@ export default function CourseDetails({ course, onBack, onSelectStudent }) {
                       {/* Metric bar */}
                       <div className="flex gap-3 mt-2 text-xs">
                         <div className="px-2 py-1 bg-gray-100 rounded-md text-gray-700">
-                          Durée : {c.duration || "—"}
+                          Durée : {c.videoUrl.duration || "—"}
                         </div>
 
                         <div className="px-2 py-1 bg-gray-100 rounded-md text-gray-700">

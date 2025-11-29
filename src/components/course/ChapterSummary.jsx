@@ -15,7 +15,7 @@ export default function ChapterSummary({ chapter }) {
         <video
           controls
           src={chapter.videoUrl.url}
-          className="w-full rounded-lg border"
+          className="w-full rounded-lg border  shadow max-h-96"
         />
       ) : (
         <div className="w-full rounded-lg border h-48 flex items-center justify-center text-gray-500">

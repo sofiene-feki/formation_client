@@ -19,6 +19,7 @@ export default function CoursePage() {
 
   const [course, setCourse] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
+  const [lastQuizResult, setLastQuizResult] = useState(null);
 
   // Fetch course details
   useEffect(() => {
@@ -47,6 +48,19 @@ export default function CoursePage() {
     isItemPassed,
   } = useCourseProgress(id, items, userId);
 
+  const getQuizStatus = useCallback(
+    (index) => {
+      const item = itemsProgress.find((i) => i.itemIndex === index);
+      if (!item) return "not-started";
+      if (item.type === "quiz") {
+        if (!item.completed) return "not-started";
+        return item.passed ? "passed" : "failed";
+      }
+      return item.completed ? "passed" : "not-started";
+    },
+    [itemsProgress]
+  );
+
   // Set active step based on last visited
   useEffect(() => {
     if (course && itemsProgress.length) {
@@ -60,44 +74,34 @@ export default function CoursePage() {
 
   // Move to next step and update progress
   const handleNext = async () => {
-    const item = items[activeStep]; // always fresh
-    const isCertificate = activeStep === items.length;
+    const item = items[activeStep];
+    if (!item) return;
 
-    if (!isCertificate && item) {
-      if (item.type === "chapter") {
-        await updateItemProgress({
-          itemIndex: activeStep,
-          type: "chapter",
-          completed: true,
-        });
-      } else if (item.type === "quiz") {
-        await updateItemProgress({
-          itemIndex: activeStep,
-          type: "quiz",
-          completed: true,
-          passed: true,
-        });
-      }
+    if (item.type === "chapter") {
+      await updateItemProgress({
+        itemIndex: activeStep,
+        type: "chapter",
+        completed: true,
+      });
+    }
+
+    if (item.type === "quiz") {
+      await updateItemProgress({
+        itemIndex: activeStep,
+        type: "quiz",
+        completed: true,
+        passed: lastQuizResult?.passed || false,
+        score: lastQuizResult?.score || 0,
+        attempts: (itemsProgress[activeStep]?.attempts || 0) + 1,
+      });
     }
 
     setActiveStep((prev) => Math.min(prev + 1, totalSteps - 1));
   };
 
-  const handleQuizComplete = useCallback(
-    async ({ score, passed }) => {
-      if (!currentItem) return;
-      await updateItemProgress({
-        itemIndex: activeStep,
-        type: "quiz",
-        score,
-        passed,
-        completed: passed,
-      });
-      if (passed) handleNext();
-      else alert("❌ Vous devez réussir le quiz pour continuer !");
-    },
-    [activeStep, currentItem, updateItemProgress, handleNext]
-  );
+  const handleQuizComplete = useCallback(({ score, passed }) => {
+    setLastQuizResult({ score, passed }); // ⭐ only store result in client
+  }, []);
 
   if (!course || progressLoading) {
     return (
@@ -127,6 +131,7 @@ export default function CoursePage() {
         onSelectChapter={(index) => {
           if (index <= items.length) setActiveStep(index);
         }}
+        getQuizStatus={getQuizStatus}
       />
 
       <motion.div

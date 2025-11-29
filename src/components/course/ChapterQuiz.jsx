@@ -1,30 +1,27 @@
 import { useEffect, useState } from "react";
 
 export default function ChapterQuiz({ quiz = [], onComplete = () => {} }) {
-  // answers[i] = array of selected indexes for question i
-  const [answers, setAnswers] = useState([]);
+  const [answers, setAnswers] = useState([]); // array of selected indexes
   const [submitted, setSubmitted] = useState(false);
 
-  // Reset when quiz changes
   useEffect(() => {
-    setAnswers(quiz.map(() => [])); // each question → empty array
+    setAnswers(quiz.map(() => []));
     setSubmitted(false);
   }, [quiz]);
 
-  // Selecting an option
   const handleSelect = (qIndex, optIndex, isMultiple) => {
+    if (submitted) return;
+
     setAnswers((prev) => {
       const copy = [...prev];
 
       if (isMultiple) {
-        // toggle checkbox
         if (copy[qIndex].includes(optIndex)) {
           copy[qIndex] = copy[qIndex].filter((x) => x !== optIndex);
         } else {
           copy[qIndex] = [...copy[qIndex], optIndex];
         }
       } else {
-        // radio → single correct
         copy[qIndex] = [optIndex];
       }
 
@@ -32,52 +29,92 @@ export default function ChapterQuiz({ quiz = [], onComplete = () => {} }) {
     });
   };
 
-  // Submit and score
   const handleSubmit = () => {
     let score = 0;
 
     quiz.forEach((q, i) => {
-      const correct = q.correctAnswer.sort().join(",");
-      const selected = answers[i].sort().join(",");
-
+      const correct = q.correctAnswer.slice().sort().join(",");
+      const selected = answers[i].slice().sort().join(",");
       if (correct === selected) score++;
     });
 
-    const passed = quiz.length === 0 ? true : score / quiz.length >= 0.7;
+    const passed = score / quiz.length >= 0.7;
 
     setSubmitted(true);
-    onComplete({ score, passed });
+
+    // ⭐ Send ONLY score + passed
+    onComplete({
+      score,
+      passed,
+    });
   };
 
+  // ─────────────────────────────────────────────
+  // UI HELPERS
+  // ─────────────────────────────────────────────
+
+  const isCorrectOption = (q, optIndex) => q.correctAnswer.includes(optIndex);
+
+  const isUserSelected = (qIndex, optIndex) =>
+    answers[qIndex]?.includes(optIndex);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {quiz.map((q, i) => {
         const isMultiple = q.correctAnswer.length > 1;
 
         return (
-          <div key={i} className="border p-3 rounded">
-            <div className="font-semibold mb-2">{q.question}</div>
+          <div key={i} className="border p-4 rounded-lg bg-white">
+            <div className="font-semibold text-lg mb-2">{q.question}</div>
 
             {isMultiple && (
               <p className="text-sm text-orange-600 mb-2">
-                Attention, plusieurs réponses sont possibles.
+                Plusieurs réponses possibles.
               </p>
             )}
 
-            <div className="space-y-2">
-              {q.options.map((opt, idx) => (
-                <label key={idx} className="flex items-center gap-2">
-                  <input
-                    type={isMultiple ? "checkbox" : "radio"}
-                    name={`q${i}`}
-                    checked={answers[i]?.includes(idx)}
-                    disabled={submitted}
-                    onChange={() => handleSelect(i, idx, isMultiple)}
-                  />
-                  <span>{opt}</span>
-                </label>
-              ))}
+            <div className="space-y-3">
+              {q.options.map((opt, idx) => {
+                // Determine color AFTER submission
+                let style = "";
+
+                if (submitted) {
+                  if (isCorrectOption(q, idx)) {
+                    style = "bg-green-100 border-green-600";
+                  } else if (isUserSelected(i, idx)) {
+                    style = "bg-red-100 border-red-600";
+                  } else {
+                    style = "bg-gray-100";
+                  }
+                }
+
+                return (
+                  <label
+                    key={idx}
+                    className={`flex items-center gap-3 p-2 border rounded cursor-pointer transition ${style}`}
+                  >
+                    <input
+                      type={isMultiple ? "checkbox" : "radio"}
+                      name={`q-${i}`}
+                      disabled={submitted}
+                      checked={isUserSelected(i, idx)}
+                      onChange={() => handleSelect(i, idx, isMultiple)}
+                    />
+                    <span>{opt}</span>
+                  </label>
+                );
+              })}
             </div>
+
+            {/* Show correct answers after submission */}
+            {submitted && (
+              <p className="text-sm mt-3 text-green-700">
+                ✔ Réponse correcte :{" "}
+                <strong>
+                  {q.correctAnswer.map((a) => q.options[a]).join(" | ")}
+                </strong>
+              </p>
+            )}
           </div>
         );
       })}
@@ -85,13 +122,13 @@ export default function ChapterQuiz({ quiz = [], onComplete = () => {} }) {
       {!submitted ? (
         <button
           onClick={handleSubmit}
-          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded"
+          className="mt-4 px-5 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
         >
-          Soumettre
+          Valider
         </button>
       ) : (
-        <div className="font-bold">
-          Score:{" "}
+        <div className="font-bold text-center text-lg mt-4">
+          Score final :{" "}
           {
             quiz.filter((q, i) => {
               return (

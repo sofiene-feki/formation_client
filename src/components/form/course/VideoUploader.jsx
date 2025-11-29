@@ -14,12 +14,16 @@ export default function VideoUploader({ value, onChange }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    setProgress(0);
     setUploading(true);
+    setProgress(0);
 
     try {
+      // 1️⃣ Extract video duration BEFORE uploading
+      const duration = await getVideoDuration(file);
+
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("duration", duration);
 
       const { data } = await axios.post(
         "https://formation-server.onrender.com/api/upload/video",
@@ -35,8 +39,12 @@ export default function VideoUploader({ value, onChange }) {
         }
       );
 
-      // Return both URL and public_id
-      onChange({ url: data.url, public_id: data.public_id });
+      // 2️⃣ Pass video metadata to parent
+      onChange({
+        url: data.url,
+        public_id: data.public_id,
+        duration, // save local duration too
+      });
     } catch (err) {
       console.error(err);
       alert("❌ Upload failed");
@@ -45,8 +53,23 @@ export default function VideoUploader({ value, onChange }) {
     }
   };
 
+  // Function that reads video metadata
+  const getVideoDuration = (file) => {
+    return new Promise((resolve) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        resolve(Math.round(video.duration)); // in seconds
+      };
+
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
   const removeVideo = () => {
-    onChange({ url: "", public_id: "" });
+    onChange({ url: "", public_id: "", duration: 0 });
     setProgress(0);
   };
 
@@ -85,6 +108,9 @@ export default function VideoUploader({ value, onChange }) {
             controls
             className="w-full rounded shadow max-h-80"
           />
+          <p className="text-sm text-gray-600">
+            🎬 Duration: {value.duration}s
+          </p>
           <button
             onClick={removeVideo}
             className="flex items-center gap-2 text-red-600 hover:underline"
