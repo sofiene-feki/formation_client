@@ -29,14 +29,14 @@ export default function CoursesPage() {
     load();
   }, []);
 
-  // ---- AUTH ----
-  if (!user) {
-    return (
-      <div className="p-10 text-center text-red-600 font-medium">
-        Vous devez être connecté pour accéder à vos cours.
-      </div>
-    );
-  }
+  // // ---- AUTH ----
+  // if (!user) {
+  //   return (
+  //     <div className="p-10 text-center text-red-600 font-medium">
+  //       Vous devez être connecté pour accéder à vos cours.
+  //     </div>
+  //   );
+  // }
 
   // ---- LOADING ----
   if (loading) {
@@ -49,7 +49,7 @@ export default function CoursesPage() {
 
   return (
     <div className="p-10 max-w-6xl mx-auto space-y-10">
-      <h1 className="text-3xl font-bold">Mes cours</h1>
+      <h1 className="text-3xl font-bold">Liste des cours</h1>
 
       <AnimatePresence mode="wait">
         <motion.div

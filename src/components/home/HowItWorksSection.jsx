@@ -1,27 +1,30 @@
 import React from "react";
 import { motion } from "framer-motion";
+import img_1 from "@/assets/img_1.png";
+import img_2 from "@/assets/img_2.png";
+import img_3 from "@/assets/img_3.png";
 
 const steps = [
   {
     id: 1,
-    title: "Apprenez où que vous soyez",
+    title: "Apprenez à votre rythme",
     description:
-      "Accédez à votre formation 100% en ligne au bureau, à la maison, en ville ou à la montagne… Partout !",
-    image: "https://cdn-icons-png.flaticon.com/512/4341/4341078.png", // remplace par ton image locale
+      "Accédez à vos cours en illimité, avancez quand vous voulez et où vous voulez : ordinateur, tablette ou mobile.",
+    image: img_1,
   },
   {
     id: 2,
-    title: "Un mentor pour vous accompagner",
+    title: "Guidé par des formateurs experts",
     description:
-      "Bénéficiez des conseils d’un expert professionnel qui vous aide à progresser tout au long de votre formation.",
-    image: "https://cdn-icons-png.flaticon.com/512/4341/4341134.png",
+      "Profitez des conseils d’un professionnel qui vous accompagne, corrige vos exercices et vous aide à progresser.",
+    image: img_2,
   },
   {
     id: 3,
-    title: "Travaillez sur des projets professionnalisants",
+    title: "Pratique, projets & certification",
     description:
-      "Réalisez des projets concrets issus de scénarios métiers, directement applicables dans le monde du travail.",
-    image: "https://cdn-icons-png.flaticon.com/512/4341/4341147.png",
+      "Réalisez des projets concrets, validez vos compétences avec des quiz et obtenez votre certificat officiel.",
+    image: img_3,
   },
 ];
 
@@ -46,20 +49,22 @@ export default function HowItWorksSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.2 }}
             >
-              <div className="bg-yellow-50 rounded-full p-10 mb-6 w-52 h-52 flex items-center justify-center">
+              {/* Bigger & Equal Size Circle */}
+              <div className="bg-yellow-50 rounded-full mb-6 w-64 h-64 flex items-center justify-center">
                 <img
                   src={step.image}
                   alt={step.title}
-                  className="w-32 h-32 object-contain"
+                  className="w-auto h-48 object-contain"
                 />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {step.title.split(" ").slice(0, -2).join(" ")}{" "}
-                <span className="block">
-                  {step.title.split(" ").slice(-2).join(" ")}
-                </span>
+
+              {/* Title */}
+              <h3 className="text-xl font-semibold text-gray-900 mb-2 leading-snug">
+                {step.title}
               </h3>
-              <p className="text-gray-600 text-sm leading-relaxed max-w-xs">
+
+              {/* Description */}
+              <p className="text-gray-600 text-sm leading-relaxed max-w-sm">
                 {step.description}
               </p>
             </motion.div>

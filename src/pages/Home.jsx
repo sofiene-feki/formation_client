@@ -11,10 +11,8 @@ export default function Home() {
   return (
     <main>
       <HeroSection />
-      <CategoriesSection />
-      <CoursesCarousel />
-      <BenefitsSection />
       <HowItWorksSection />
+      <CoursesCarousel />
       <TestimonialsSection />
       <FooterSection />
     </main>

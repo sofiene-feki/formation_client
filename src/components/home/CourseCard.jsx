@@ -3,9 +3,9 @@ import { Star } from "lucide-react";
 
 export default function CourseCard({ course }) {
   return (
-    <div className="min-w-[260px] max-w-[260px] bg-white rounded-xl overflow-hidden shadow hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-100">
+    <div className="min-w-[260px]  bg-white rounded-xl overflow-hidden shadow hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-100">
       <img
-        src={course.image}
+        src={course.thumbnail.url}
         alt={course.title}
         className="h-40 w-full object-cover"
       />
@@ -14,7 +14,7 @@ export default function CourseCard({ course }) {
           {course.title}
         </h3>
         <p className="text-xs text-gray-500 mt-1 line-clamp-1">
-          {course.instructor}
+          {course.Instructeur}
         </p>
 
         <div className="flex items-center text-sm mt-2">
@@ -36,17 +36,37 @@ export default function CourseCard({ course }) {
           )}
         </div>
 
-        {course.tag && (
-          <div
-            className={`inline-block mt-2 px-2 py-0.5 rounded-full text-xs font-medium ${
-              course.tag === "Bestseller"
-                ? "bg-green-100 text-green-700"
-                : course.tag === "Hot & New"
-                ? "bg-red-100 text-red-700"
-                : "bg-purple-100 text-purple-700"
-            }`}
-          >
-            {course.tag}
+        {course && (
+          <div className="flex gap-2 mt-2">
+            {/* Difficulty Tag */}
+            {course.difficulty && (
+              <span
+                className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  course.difficulty === "Easy"
+                    ? "bg-green-100 text-green-700"
+                    : course.difficulty === "Medium"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : "bg-red-100 text-red-700" // Hard
+                }`}
+              >
+                {course.difficulty}
+              </span>
+            )}
+
+            {/* Language Tag */}
+            {course.language && (
+              <span
+                className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  course.language === "French"
+                    ? "bg-blue-100 text-blue-700"
+                    : course.language === "Arabic"
+                    ? "bg-purple-100 text-purple-700"
+                    : "bg-orange-100 text-orange-700" // English
+                }`}
+              >
+                {course.language}
+              </span>
+            )}
           </div>
         )}
       </div>
